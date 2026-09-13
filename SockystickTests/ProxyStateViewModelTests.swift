@@ -65,6 +65,15 @@ final class MockNetworkProxyManager: NetworkProxyManagerProtocol {
         lastPassword = password
         return socksConfigToReturn
     }
+
+    var disableAllCalledCount = 0
+    var lastPriorityInterface: String? = nil
+
+    func disableAllSOCKSProxies(priorityInterfaceName: String?) {
+        disableAllCalledCount += 1
+        lastPriorityInterface = priorityInterfaceName
+        socksConfigToReturn.isEnabled = false
+    }
 }
 
 @MainActor
@@ -138,5 +147,33 @@ final class ProxyStateViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.proxyHost, "10.0.0.9")
         XCTAssertEqual(viewModel.proxyPortString, "9050")
         XCTAssertEqual(viewModel.parsedPort, 9050)
+    }
+
+    func testDisableProxyOnQuit() {
+        // Enable proxy first
+        viewModel.toggleProxy()
+        XCTAssertTrue(viewModel.isProxyEnabled)
+
+        // Trigger quit cleanup
+        viewModel.disableProxyOnQuit()
+
+        XCTAssertFalse(viewModel.isProxyEnabled)
+        XCTAssertEqual(mockManager.disableAllCalledCount, 1)
+        XCTAssertEqual(mockManager.lastPriorityInterface, "Wi-Fi")
+        XCTAssertEqual(viewModel.statusMessage, "SOCKS5 Proxy Disabled")
+    }
+
+    func testMenuBarIconsExistAndAreTemplates() {
+        let disconnectedIcon = MenuBarIcon.disconnected
+        XCTAssertNotNil(disconnectedIcon)
+        XCTAssertEqual(disconnectedIcon.size.width, 18.0)
+        XCTAssertEqual(disconnectedIcon.size.height, 18.0)
+        XCTAssertTrue(disconnectedIcon.isTemplate)
+
+        let connectedIcon = MenuBarIcon.connected
+        XCTAssertNotNil(connectedIcon)
+        XCTAssertEqual(connectedIcon.size.width, 18.0)
+        XCTAssertEqual(connectedIcon.size.height, 18.0)
+        XCTAssertTrue(connectedIcon.isTemplate)
     }
 }

@@ -83,8 +83,59 @@ public struct MenuBarView: View {
 
         // MARK: - Quit Action
         Button("Quit Sockystick") {
+            viewModel.disableProxyOnQuit()
             NSApplication.shared.terminate(nil)
         }
         .keyboardShortcut("q", modifiers: .command)
+    }
+}
+
+// MARK: - Menu Bar Vector Icon Generation
+public enum MenuBarIcon {
+    public static let disconnected: NSImage = createStickImage(withPuck: false)
+    public static let connected: NSImage = createStickImage(withPuck: true)
+
+    public static func createStickImage(withPuck: Bool) -> NSImage {
+        let size = NSSize(width: 18, height: 18)
+        let image = NSImage(size: size, flipped: false) { _ in
+            guard let ctx = NSGraphicsContext.current?.cgContext else { return false }
+            let black = NSColor.black.cgColor
+            ctx.setFillColor(black)
+            
+            // Balanced vector bounds within 18x18 pt canvas
+            let stickPath = CGMutablePath()
+            // Handle knob at top-left
+            stickPath.move(to: CGPoint(x: 2.6, y: 16.5))
+            stickPath.addLine(to: CGPoint(x: 4.4, y: 16.5))
+            stickPath.addLine(to: CGPoint(x: 3.9, y: 15.0))
+            // Shaft right side
+            stickPath.addLine(to: CGPoint(x: 8.6, y: 4.8))
+            // Blade top side
+            stickPath.addLine(to: CGPoint(x: 13.0, y: 4.8))
+            // Blade toe
+            stickPath.addArc(tangent1End: CGPoint(x: 14.0, y: 4.8), tangent2End: CGPoint(x: 14.0, y: 2.8), radius: 1.0)
+            stickPath.addArc(tangent1End: CGPoint(x: 14.0, y: 2.8), tangent2End: CGPoint(x: 13.0, y: 2.8), radius: 1.0)
+            // Blade bottom (ice level)
+            stickPath.addLine(to: CGPoint(x: 7.2, y: 2.8))
+            // Heel
+            stickPath.addArc(tangent1End: CGPoint(x: 6.2, y: 2.8), tangent2End: CGPoint(x: 6.6, y: 4.4), radius: 1.2)
+            // Shaft left side
+            stickPath.addLine(to: CGPoint(x: 2.2, y: 15.0))
+            stickPath.closeSubpath()
+            
+            ctx.addPath(stickPath)
+            ctx.fillPath()
+            
+            if withPuck {
+                // Hockey puck disc on the ice ahead of the blade toe
+                let puckRect = CGRect(x: 14.8, y: 2.8, width: 2.4, height: 2.0)
+                let puckPath = CGPath(roundedRect: puckRect, cornerWidth: 0.6, cornerHeight: 0.6, transform: nil)
+                ctx.addPath(puckPath)
+                ctx.fillPath()
+            }
+            return true
+        }
+        image.isTemplate = true
+        return image
     }
 }

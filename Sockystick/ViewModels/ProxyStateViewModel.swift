@@ -298,6 +298,15 @@ public final class ProxyStateViewModel: ObservableObject {
         refreshStatus()
     }
 
+    public func disableProxyOnQuit() {
+        LogStore.log(level: .info, category: "Lifecycle", message: "Application quit triggered: Disabling SOCKS5 proxy")
+        let priority = activeInterface?.name
+        proxyManager.disableAllSOCKSProxies(priorityInterfaceName: priority)
+        SOCKS5BridgeServer.shared.stop()
+        self.isProxyEnabled = false
+        self.statusMessage = "SOCKS5 Proxy Disabled"
+    }
+
     public func selectInterface(_ interface: NetworkInterface) {
         let oldName = activeInterface?.name ?? "None"
         self.activeInterface = interface
