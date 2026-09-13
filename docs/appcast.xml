@@ -6,6 +6,20 @@
         <description>Most recent updates for Sockystick.</description>
         <language>en</language>
         <item>
+            <title>1.0.5</title>
+            <pubDate>Sun, 13 Sep 2026 09:46:04 -0400</pubDate>
+            <sparkle:version>1.0.5</sparkle:version>
+            <sparkle:shortVersionString>1.0.5</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Sockystick 1.0.5</h2>
+<p>Sockystick 1.0.5 aligns the application icon with Apple's macOS Human Interface Guidelines icon grid and Dock proportions.</p>
+<ul>
+  <li><strong>Dock Icon Alignment</strong>: Adjusted the icon layout to Apple's standard 824&times;824 pt squircle grid with standard optical padding and drop shadow, ensuring it renders at the exact same size as all other macOS apps in the Dock.</li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/binoio/sockystick/releases/download/v1.0.5/Sockystick-1.0.5.zip" length="3730046" type="application/octet-stream" sparkle:edSignature="d14g9C9z1ZrjDg1T/OfateIwtDhG7VW3XaSW6U4Fk9RS9ZNj0VoC2vQ8VYTOhEJyFFFZy9Y426Bv0P1ip2ijBg=="/>
+        </item>
+        <item>
             <title>1.0.4</title>
             <pubDate>Sun, 13 Sep 2026 09:32:19 -0400</pubDate>
             <sparkle:version>1.0.4</sparkle:version>
@@ -35,23 +49,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://github.com/binoio/sockystick/releases/download/v1.0.3/Sockystick-1.0.3.zip" length="5143227" type="application/octet-stream" sparkle:edSignature="DGxpZkymHKXaiODxpNCVYgHUTV+7USWaL6kztECpT8sad97GXZ/Sf93aknrl1af+gUa2WUU/LmnsjyeP++weCA=="/>
-        </item>
-        <item>
-            <title>1.0.2</title>
-            <pubDate>Sat, 12 Sep 2026 20:53:15 -0400</pubDate>
-            <sparkle:version>1.0.2</sparkle:version>
-            <sparkle:shortVersionString>1.0.2</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Sockystick 1.0.2</h2>
-<p>Sockystick 1.0.2 introduces automatic proxy teardown on application quit and brand new dynamic hockey stick menu bar icons.</p>
-<ul>
-  <li><strong>Automatic Proxy Teardown on Quit</strong>: The system SOCKS5 proxy on active network interfaces is automatically disabled and the local authentication bridge is stopped whenever Sockystick terminates.</li>
-  <li><strong>Dynamic Hockey Stick Menubar Icons</strong>: Custom vector icons showing a hockey stick when disconnected, and a hockey stick with a puck when connected and active.</li>
-  <li><strong>Clean Menu Bar</strong>: Removed text labels for a minimalist, distraction-free menu bar presence.</li>
-  <li><strong>Sparkle 2 Updates</strong>: EdDSA-signed automatic updates.</li>
-</ul>
-]]></description>
-            <enclosure url="https://github.com/binoio/sockystick/releases/download/v1.0.2/Sockystick-1.0.2.zip" length="5081573" type="application/octet-stream" sparkle:edSignature="YtcVi0dW6JJ42MO7haALk54GA/aFd9mrpVm5Penu9ct9Pd8rmJuoCRRHEv8OgGfhZCY92lcf636c6pizUQe6Bw=="/>
         </item>
     </channel>
 </rss>
