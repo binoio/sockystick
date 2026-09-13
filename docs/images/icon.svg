@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E1B4B" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+    <clipPath id="squircle">
+      <rect width="1024" height="1024" rx="229.0688" ry="229.0688" />
+    </clipPath>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="12" flood-color="#00F2FE" flood-opacity="0.8" />
+    </filter>
+    <filter id="puckGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="16" flood-color="#10B981" flood-opacity="0.9" />
+    </filter>
+  </defs>
+  <g clip-path="url(#squircle)">
+    <rect width="1024" height="1024" fill="url(#bgGrad)" />
+    <path d="M128 0v1024M256 0v1024M384 0v1024M512 0v1024M640 0v1024M768 0v1024M896 0v1024M0 128h1024M0 256h1024M0 384h1024M0 512h1024M0 640h1024M0 768h1024M0 896h1024" stroke="#38BDF8" stroke-opacity="0.15" stroke-width="1.5" />
+    <path d="M340 184 L480 684 C520 784 650 824 780 804" fill="none" stroke="#334155" stroke-width="36" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M340 184 L480 684 C520 784 650 824 780 804" fill="none" stroke="#00F2FE" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)" />
+    <path d="M340 184 L480 684 C520 784 650 824 780 804" fill="none" stroke="#10B981" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="340" cy="184" r="20" fill="#0F172A" stroke="#00F2FE" stroke-width="4" />
+    <circle cx="340" cy="184" r="5" fill="#FFFFFF" />
+    <circle cx="410" cy="434" r="16" fill="#0F172A" stroke="#00F2FE" stroke-width="4" />
+    <circle cx="410" cy="434" r="4" fill="#FFFFFF" />
+    <circle cx="480" cy="684" r="24" fill="#0F172A" stroke="#F59E0B" stroke-width="4" />
+    <circle cx="480" cy="684" r="6" fill="#FFFFFF" />
+    <circle cx="640" cy="792" r="18" fill="#0F172A" stroke="#10B981" stroke-width="4" />
+    <circle cx="640" cy="792" r="5" fill="#FFFFFF" />
+    <circle cx="780" cy="804" r="28" fill="#10B981" filter="url(#puckGlow)" />
+    <circle cx="780" cy="804" r="14" fill="#FFFFFF" />
+  </g>
+</svg>
