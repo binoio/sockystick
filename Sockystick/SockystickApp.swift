@@ -13,6 +13,7 @@ class SockystickAppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     lazy var updaterController = SPUStandardUpdaterController(
         startingUpdater: false, updaterDelegate: nil, userDriverDelegate: nil)
     lazy var updaterViewModel = UpdaterViewModel(updater: updaterController.updater)
+    var proxyViewModel: ProxyStateViewModel?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") != nil,
@@ -35,6 +36,19 @@ class SockystickAppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         }
         return true
     }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        LogStore.log(level: .info, category: "Lifecycle", message: "applicationShouldTerminate: Disabling SOCKS5 proxy on exit")
+        proxyViewModel?.disableProxyOnQuit()
+        NetworkProxyManager.shared.disableAllSOCKSProxies(priorityInterfaceName: proxyViewModel?.activeInterface?.name)
+        return .terminateNow
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        LogStore.log(level: .info, category: "Lifecycle", message: "applicationWillTerminate: Disabling SOCKS5 proxy on exit")
+        proxyViewModel?.disableProxyOnQuit()
+        NetworkProxyManager.shared.disableAllSOCKSProxies(priorityInterfaceName: proxyViewModel?.activeInterface?.name)
+    }
 }
 
 @main
@@ -48,10 +62,21 @@ struct SockystickApp: App {
         // MARK: - Main Dock Window
         WindowGroup("Sockystick", id: "main") {
             ContentView(viewModel: proxyViewModel)
+                .onAppear {
+                    appDelegate.proxyViewModel = proxyViewModel
+                }
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
         .commands {
+            CommandGroup(replacing: .appTermination) {
+                Button("Quit Sockystick") {
+                    proxyViewModel.disableProxyOnQuit()
+                    NSApplication.shared.terminate(nil)
+                }
+                .keyboardShortcut("q", modifiers: .command)
+            }
+
             CommandGroup(after: .appInfo) {
                 CheckForUpdatesView(viewModel: appDelegate.updaterViewModel)
             }
@@ -92,13 +117,9 @@ struct SockystickApp: App {
                 }
             )
         } label: {
-            HStack(spacing: 4) {
-                Image(systemName: proxyViewModel.isProxyEnabled ? "network.badge.shield.half.filled" : "network")
-                if proxyViewModel.isProxyEnabled {
-                    Text("SOCKS")
-                        .font(.caption2.bold())
-                }
-            }
+            Image(nsImage: proxyViewModel.isProxyEnabled ? MenuBarIcon.connected : MenuBarIcon.disconnected)
+                .renderingMode(.template)
+                .help(proxyViewModel.isProxyEnabled ? "Sockystick: SOCKS5 Active" : "Sockystick: SOCKS5 Disconnected")
         }
         .menuBarExtraStyle(.menu)
 

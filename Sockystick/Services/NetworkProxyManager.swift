@@ -13,6 +13,13 @@ public protocol NetworkProxyManagerProtocol {
     func setSOCKSProxyState(for interfaceName: String, enabled: Bool) -> Bool
     func disableHTTPProxies(for interfaceName: String)
     func toggleSOCKSProxy(for interfaceName: String, host: String, port: Int, useAuthentication: Bool, username: String, password: String) -> ProxyConfig
+    func disableAllSOCKSProxies(priorityInterfaceName: String?)
+}
+
+public extension NetworkProxyManagerProtocol {
+    func disableAllSOCKSProxies() {
+        disableAllSOCKSProxies(priorityInterfaceName: nil)
+    }
 }
 
 public class NetworkProxyManager: NetworkProxyManagerProtocol {
@@ -372,5 +379,25 @@ public class NetworkProxyManager: NetworkProxyManagerProtocol {
         }
 
         return getSOCKSProxy(for: interfaceName)
+    }
+
+    public func disableAllSOCKSProxies(priorityInterfaceName: String? = nil) {
+        LogStore.log(
+            level: .info,
+            category: "Proxy",
+            message: "Disabling SOCKS5 proxy on all interfaces (Priority: \(priorityInterfaceName ?? "None"))"
+        )
+        if let priority = priorityInterfaceName, !priority.isEmpty {
+            _ = setSOCKSProxyState(for: priority, enabled: false)
+        }
+        let interfaces = fetchAllInterfaces()
+        for iface in interfaces {
+            if iface.name == priorityInterfaceName { continue }
+            let config = getSOCKSProxy(for: iface.name)
+            if config.isEnabled {
+                _ = setSOCKSProxyState(for: iface.name, enabled: false)
+            }
+        }
+        SOCKS5BridgeServer.shared.stop()
     }
 }
