@@ -6,6 +6,23 @@
         <description>Most recent updates for Sockystick.</description>
         <language>en</language>
         <item>
+            <title>1.0.1</title>
+            <pubDate>Sat, 12 Sep 2026 20:36:30 -0400</pubDate>
+            <sparkle:version>1.0.1</sparkle:version>
+            <sparkle:shortVersionString>1.0.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Sockystick 1.0.1</h2>
+<p>Sockystick 1.0.1 introduces an updated 3D app icon, local SOCKS5 authentication bridging for seamless browser compatibility, and Sparkle 2 updates.</p>
+<ul>
+  <li><strong>Brand New App Icon</strong>: A 3D-rendered composite carbon fiber hockey stick with braided ethernet cable tape, glowing circuit bus routing, and an illuminated proxy router puck.</li>
+  <li><strong>Local SOCKS5 Auth Bridge</strong>: Transparent RFC 1929 authentication bridge enabling full authenticated SOCKS5 proxy support in Safari and system apps without OS limitations.</li>
+  <li><strong>Framed Socket Streaming</strong>: Non-blocking byte buffering and direct TLS Client Hello forwarding for responsive web browsing.</li>
+  <li><strong>Sparkle 2 Updates</strong>: EdDSA-signed automatic updates.</li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/binoio/sockystick/releases/download/v1.0.1/Sockystick-1.0.1.zip" length="5058025" type="application/octet-stream" sparkle:edSignature="g3/sN8HFN+ujb5jAoUyRg70mi1V88qD5b/Y7cFQEecvaFztAqqS9DEjg86rp0LreKRelcT1x8wDQNyS1rFGWCQ=="/>
+        </item>
+        <item>
             <title>Version 1.0.0</title>
             <pubDate>Sat, 12 Sep 2026 18:00:00 -0400</pubDate>
             <enclosure url="https://github.com/binoio/sockystick/releases/download/v1.0.0/Sockystick-1.0.0.zip" length="3479535" type="application/octet-stream" sparkle:edSignature="uKiuVoH7XBRIwSAQHBFMoDC/UYzJsbjoQRhldrn+XdWThT+n3OfUOMNiMWjwGpAg6u5piD7pjn4GhJin11cWBw=="/>
