@@ -18,8 +18,8 @@ guard let data = try? Data(contentsOf: URL(fileURLWithPath: srcPath)),
     fatalError("Failed to load source image from \(srcPath)")
 }
 
-// Crop bounding box to fill squircle with no outer border
-let cropRect = CGRect(x: 135, y: 135, width: 754, height: 754)
+// Crop bounding box to fill squircle with no outer border or drop shadows
+let cropRect = CGRect(x: 170, y: 170, width: 684, height: 684)
 guard let cropped = cgImage.cropping(to: cropRect) else {
     fatalError("Failed to crop source image")
 }

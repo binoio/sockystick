@@ -20,6 +20,19 @@ public struct SettingsView: View {
         TabView {
             // MARK: - General Tab
             Form {
+                Section("Appearance") {
+                    Toggle("Show Dock Icon", isOn: Binding(
+                        get: { !proxyViewModel.hideDockIcon },
+                        set: { proxyViewModel.hideDockIcon = !$0 }
+                    ))
+
+                    if proxyViewModel.hideDockIcon {
+                        Text("Sockystick will remain available from the menu bar extra while the Dock icon is hidden.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 Section("Launch & Startup Behavior") {
                     Toggle("Start Sockystick at login", isOn: $proxyViewModel.launchAtLogin)
                     Toggle("Automatically enable SOCKS5 proxy on app launch", isOn: $proxyViewModel.autoStartProxyOnLaunch)
@@ -78,6 +91,6 @@ public struct SettingsView: View {
                 Label("Updates", systemImage: "arrow.triangle.2.circlepath")
             }
         }
-        .frame(width: 480, height: 380)
+        .frame(width: 480, height: 440)
     }
 }

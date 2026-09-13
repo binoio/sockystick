@@ -20,10 +20,24 @@ class SockystickAppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
            NSClassFromString("XCTestCase") == nil {
             updaterController.startUpdater()
         }
-        NSApp.activate(ignoringOtherApps: true)
-        DispatchQueue.main.async {
-            if let firstWindow = NSApp.windows.first(where: { $0.canBecomeMain }) {
-                firstWindow.makeKeyAndOrderFront(nil)
+        if let icon = NSImage(named: "AppIcon") {
+            NSApp.applicationIconImage = icon
+        }
+
+        let hideDock = UserDefaults.standard.bool(forKey: "sockystick.hideDockIcon")
+        if hideDock {
+            NSApp.setActivationPolicy(.accessory)
+            DispatchQueue.main.async {
+                for window in NSApp.windows where window.canBecomeMain {
+                    window.orderOut(nil)
+                }
+            }
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+            DispatchQueue.main.async {
+                if let firstWindow = NSApp.windows.first(where: { $0.canBecomeMain }) {
+                    firstWindow.makeKeyAndOrderFront(nil)
+                }
             }
         }
     }
@@ -64,6 +78,7 @@ struct SockystickApp: App {
             ContentView(viewModel: proxyViewModel)
                 .onAppear {
                     appDelegate.proxyViewModel = proxyViewModel
+                    proxyViewModel.applyDockIconVisibility()
                 }
         }
         .windowStyle(.titleBar)
@@ -110,6 +125,11 @@ struct SockystickApp: App {
                 openMainWindowAction: {
                     NSApp.activate(ignoringOtherApps: true)
                     openWindow(id: "main")
+                    DispatchQueue.main.async {
+                        if let firstWindow = NSApp.windows.first(where: { $0.canBecomeMain }) {
+                            firstWindow.makeKeyAndOrderFront(nil)
+                        }
+                    }
                 },
                 openLogsWindowAction: {
                     NSApp.activate(ignoringOtherApps: true)
