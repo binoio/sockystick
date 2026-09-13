@@ -1,8 +1,8 @@
 #!/usr/bin/env swift
 //
-// generate_icon.swift: Render Sockystick's app icon — a high-fidelity carbon fiber
-// hockey stick with braided ethernet cable tape, glowing circuit traces, and a glossy
-// router proxy puck filling the macOS squircle.
+// generate_icon.swift: Render Sockystick's app icon — a cozy, highly-detailed
+// 3D chunky knitted wool sock with retro stripes on a subtle matte slate gradient,
+// filling the macOS squircle.
 //
 // Usage: xcrun swift Scripts/generate_icon.swift [preview-only-output.png]
 //
@@ -18,11 +18,8 @@ guard let data = try? Data(contentsOf: URL(fileURLWithPath: srcPath)),
     fatalError("Failed to load source image from \(srcPath)")
 }
 
-// Crop bounding box to fill squircle with no outer border or drop shadows
-let cropRect = CGRect(x: 170, y: 170, width: 684, height: 684)
-guard let cropped = cgImage.cropping(to: cropRect) else {
-    fatalError("Failed to crop source image")
-}
+// Full-bleed 1:1 image fills the macOS squircle canvas cleanly
+let cropped = cgImage
 
 func renderIcon(size: Int) -> NSBitmapImageRep {
     let colorSpace = CGColorSpaceCreateDeviceRGB()
