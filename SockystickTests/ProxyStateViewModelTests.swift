@@ -89,6 +89,7 @@ final class ProxyStateViewModelTests: XCTestCase {
         UserDefaults.standard.removeObject(forKey: "sockystick.proxyUsername")
         UserDefaults.standard.removeObject(forKey: "sockystick.proxyPassword")
         UserDefaults.standard.removeObject(forKey: "sockystick.autoStartProxyOnLaunch")
+        UserDefaults.standard.removeObject(forKey: "sockystick.hideDockIcon")
         KeychainHelper.shared.deletePassword(forAccount: "socks5_password")
         mockManager = MockNetworkProxyManager()
         viewModel = ProxyStateViewModel(proxyManager: mockManager)
@@ -107,6 +108,7 @@ final class ProxyStateViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.availableInterfaces.count, 2)
         XCTAssertEqual(viewModel.activeInterface?.name, "Wi-Fi")
         XCTAssertFalse(viewModel.isProxyEnabled)
+        XCTAssertFalse(viewModel.hideDockIcon)
     }
 
     func testToggleProxyUnauthenticated() {
@@ -175,5 +177,26 @@ final class ProxyStateViewModelTests: XCTestCase {
         XCTAssertEqual(connectedIcon.size.width, 18.0)
         XCTAssertEqual(connectedIcon.size.height, 18.0)
         XCTAssertTrue(connectedIcon.isTemplate)
+    }
+
+    func testHideDockIconToggleAndPersistence() {
+        XCTAssertFalse(viewModel.hideDockIcon)
+        XCTAssertFalse(UserDefaults.standard.bool(forKey: "sockystick.hideDockIcon"))
+
+        viewModel.hideDockIcon = true
+        XCTAssertTrue(viewModel.hideDockIcon)
+        XCTAssertTrue(UserDefaults.standard.bool(forKey: "sockystick.hideDockIcon"))
+
+        viewModel.hideDockIcon = false
+        XCTAssertFalse(viewModel.hideDockIcon)
+        XCTAssertFalse(UserDefaults.standard.bool(forKey: "sockystick.hideDockIcon"))
+    }
+
+    func testApplyDockIconVisibility() {
+        viewModel.hideDockIcon = true
+        viewModel.applyDockIconVisibility()
+        
+        viewModel.hideDockIcon = false
+        viewModel.applyDockIconVisibility()
     }
 }

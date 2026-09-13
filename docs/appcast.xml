@@ -6,6 +6,22 @@
         <description>Most recent updates for Sockystick.</description>
         <language>en</language>
         <item>
+            <title>1.0.3</title>
+            <pubDate>Sat, 12 Sep 2026 21:10:19 -0400</pubDate>
+            <sparkle:version>1.0.3</sparkle:version>
+            <sparkle:shortVersionString>1.0.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Sockystick 1.0.3</h2>
+<p>Sockystick 1.0.3 brings a refreshed squircle-filling app icon and an option to hide the Dock icon, allowing Sockystick to run exclusively in the menu bar.</p>
+<ul>
+  <li><strong>Option for No Dock Icon</strong>: Configure Sockystick to run exclusively from the menu bar extra with the Dock icon hidden via Settings &gt; General &gt; Appearance.</li>
+  <li><strong>Updated App Icon</strong>: High-fidelity icon tightly filling the macOS squircle without border or drop-shadow artifacts.</li>
+  <li><strong>Seamless Window Activation</strong>: Starts quietly in the menu bar when the Dock icon is hidden, while opening windows from the menu bar brings them forward smoothly.</li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/binoio/sockystick/releases/download/v1.0.3/Sockystick-1.0.3.zip" length="5143227" type="application/octet-stream" sparkle:edSignature="DGxpZkymHKXaiODxpNCVYgHUTV+7USWaL6kztECpT8sad97GXZ/Sf93aknrl1af+gUa2WUU/LmnsjyeP++weCA=="/>
+        </item>
+        <item>
             <title>1.0.2</title>
             <pubDate>Sat, 12 Sep 2026 20:53:15 -0400</pubDate>
             <sparkle:version>1.0.2</sparkle:version>
@@ -38,23 +54,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://github.com/binoio/sockystick/releases/download/v1.0.1/Sockystick-1.0.1.zip" length="5058025" type="application/octet-stream" sparkle:edSignature="g3/sN8HFN+ujb5jAoUyRg70mi1V88qD5b/Y7cFQEecvaFztAqqS9DEjg86rp0LreKRelcT1x8wDQNyS1rFGWCQ=="/>
-        </item>
-        <item>
-            <title>Version 1.0.0</title>
-            <pubDate>Sat, 12 Sep 2026 18:00:00 -0400</pubDate>
-            <enclosure url="https://github.com/binoio/sockystick/releases/download/v1.0.0/Sockystick-1.0.0.zip" length="3479535" type="application/octet-stream" sparkle:edSignature="uKiuVoH7XBRIwSAQHBFMoDC/UYzJsbjoQRhldrn+XdWThT+n3OfUOMNiMWjwGpAg6u5piD7pjn4GhJin11cWBw=="/>
-            <sparkle:version>1.0.0</sparkle:version>
-            <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Sockystick 1.0.0</h2>
-<p>Initial release of <strong>Sockystick</strong> — the macOS GUI Dock and Menubar app for toggling SOCKS5 proxies on active network interfaces.</p>
-<ul>
-  <li><strong>One-Click Proxy Toggle</strong>: Quickly enable or disable SOCKS5 proxy settings on active network interfaces.</li>
-  <li><strong>Dock & Menu Bar Modes</strong>: Full support for menubar control item and main application window.</li>
-  <li><strong>Interface Auto-Detection</strong>: Automatically identifies the active primary connection (e.g. Wi-Fi en0).</li>
-  <li><strong>Sparkle 2 Updates</strong>: Integrated automatic updates.</li>
-</ul>
-]]></description>
         </item>
     </channel>
 </rss>

@@ -6,6 +6,7 @@
 import Foundation
 import Combine
 import SwiftUI
+import AppKit
 import ServiceManagement
 
 @MainActor
@@ -18,6 +19,14 @@ public final class ProxyStateViewModel: ObservableObject {
     @Published public var useAuthentication: Bool
     @Published public var proxyUsername: String
     @Published public var proxyPassword: String
+
+    @Published public var hideDockIcon: Bool {
+        didSet {
+            UserDefaults.standard.set(hideDockIcon, forKey: "sockystick.hideDockIcon")
+            LogStore.log(level: .info, category: "Settings", message: "Hide Dock icon changed to \(hideDockIcon)")
+            applyDockIconVisibility()
+        }
+    }
 
     @Published public var autoStartProxyOnLaunch: Bool {
         didSet {
@@ -68,18 +77,21 @@ public final class ProxyStateViewModel: ObservableObject {
         
         let hasAuth = (!savedUser.isEmpty || !savedPass.isEmpty) || UserDefaults.standard.bool(forKey: "sockystick.useAuthentication")
         let savedAutoStart = UserDefaults.standard.bool(forKey: "sockystick.autoStartProxyOnLaunch")
+        let savedHideDockIcon = UserDefaults.standard.bool(forKey: "sockystick.hideDockIcon")
         
         self.proxyHost = savedHost
         self.proxyPortString = savedPort
         self.useAuthentication = hasAuth
         self.proxyUsername = savedUser
         self.proxyPassword = savedPass
+        self.hideDockIcon = savedHideDockIcon
         self.autoStartProxyOnLaunch = savedAutoStart
         self.launchAtLogin = (SMAppService.mainApp.status == .enabled)
 
         setupPersistenceSubscribers()
         
         refreshStatus()
+        applyDockIconVisibility()
 
         // Ensure SOCKS5 proxy & local auth bridge are running if proxy is active or auto-start is set
         if isProxyEnabled || savedAutoStart {
@@ -333,6 +345,15 @@ public final class ProxyStateViewModel: ObservableObject {
                 password: proxyPassword
             )
             refreshStatus()
+        }
+    }
+
+    public func applyDockIconVisibility() {
+        guard let app = NSApp else { return }
+        let activationPolicy: NSApplication.ActivationPolicy = hideDockIcon ? .accessory : .regular
+        app.setActivationPolicy(activationPolicy)
+        if !hideDockIcon {
+            app.activate(ignoringOtherApps: true)
         }
     }
 }
