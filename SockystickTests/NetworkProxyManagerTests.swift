@@ -52,7 +52,7 @@ final class NetworkProxyManagerTests: XCTestCase {
     func testParseSOCKSProxyOutputEnabled() {
         let sampleOutput = """
         Enabled: Yes
-        Server: 127.0.0.1
+        Server: 192.0.2.10
         Port: 1080
         Authenticated Proxy Enabled: 0
         """
@@ -60,7 +60,7 @@ final class NetworkProxyManagerTests: XCTestCase {
         let config = manager.parseSOCKSProxyOutput(sampleOutput)
 
         XCTAssertTrue(config.isEnabled)
-        XCTAssertEqual(config.host, "127.0.0.1")
+        XCTAssertEqual(config.host, "192.0.2.10")
         XCTAssertEqual(config.port, 1080)
         XCTAssertFalse(config.isAuthenticated)
     }
@@ -68,7 +68,7 @@ final class NetworkProxyManagerTests: XCTestCase {
     func testParseSOCKSProxyOutputAuthenticated() {
         let sampleOutput = """
         Enabled: Yes
-        Server: 127.0.0.1
+        Server: 192.0.2.10
         Port: 1080
         Authenticated Proxy Enabled: 1
         Authenticated Proxy Username: testuser
@@ -77,11 +77,11 @@ final class NetworkProxyManagerTests: XCTestCase {
         let config = manager.parseSOCKSProxyOutput(sampleOutput)
 
         XCTAssertTrue(config.isEnabled)
-        XCTAssertEqual(config.host, "127.0.0.1")
+        XCTAssertEqual(config.host, "192.0.2.10")
         XCTAssertEqual(config.port, 1080)
         XCTAssertTrue(config.isAuthenticated)
         XCTAssertEqual(config.username, "testuser")
-        XCTAssertEqual(config.serverString, "testuser@127.0.0.1:1080")
+        XCTAssertEqual(config.serverString, "testuser@192.0.2.10:1080")
     }
 
     func testParseSOCKSProxyOutputDisabled() {

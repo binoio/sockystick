@@ -52,12 +52,6 @@ public struct ContentView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Spacer()
-                        Button("Default (127.0.0.1:1080)") {
-                            viewModel.applyPreset(host: "127.0.0.1", port: 1080)
-                        }
-                        .buttonStyle(.borderless)
-                        .font(.caption)
-
                         Button("Localhost (127.0.0.1:1080)") {
                             viewModel.applyPreset(host: "127.0.0.1", port: 1080)
                         }
