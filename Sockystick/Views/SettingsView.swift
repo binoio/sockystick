@@ -38,6 +38,13 @@ public struct SettingsView: View {
                     Toggle("Automatically enable SOCKS5 proxy on app launch", isOn: $proxyViewModel.autoStartProxyOnLaunch)
                 }
 
+                Section("Safari & iCloud Private Relay") {
+                    Toggle("Reset Safari networking on connect/disconnect", isOn: $proxyViewModel.resetSafariNetworkingOnToggle)
+                    Text("Restarts Safari's background networking process (keeping windows and tabs open) so Safari drops cached iCloud Private Relay or proxy connections immediately.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("Default Proxy Parameters") {
                     TextField("Default Host:", text: $proxyViewModel.proxyHost)
                         .textFieldStyle(.roundedBorder)
@@ -91,6 +98,6 @@ public struct SettingsView: View {
                 Label("Updates", systemImage: "arrow.triangle.2.circlepath")
             }
         }
-        .frame(width: 480, height: 440)
+        .frame(width: 480, height: 520)
     }
 }

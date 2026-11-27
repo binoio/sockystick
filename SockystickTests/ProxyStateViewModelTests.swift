@@ -68,11 +68,18 @@ final class MockNetworkProxyManager: NetworkProxyManagerProtocol {
 
     var disableAllCalledCount = 0
     var lastPriorityInterface: String? = nil
+    var resetSafariCalledCount = 0
 
     func disableAllSOCKSProxies(priorityInterfaceName: String?) {
         disableAllCalledCount += 1
         lastPriorityInterface = priorityInterfaceName
         socksConfigToReturn.isEnabled = false
+    }
+
+    @discardableResult
+    func resetSafariNetworking(synchronous: Bool) -> Int {
+        resetSafariCalledCount += 1
+        return 1
     }
 }
 
@@ -90,15 +97,17 @@ final class ProxyStateViewModelTests: XCTestCase {
         UserDefaults.standard.removeObject(forKey: "sockystick.proxyPassword")
         UserDefaults.standard.removeObject(forKey: "sockystick.autoStartProxyOnLaunch")
         UserDefaults.standard.removeObject(forKey: "sockystick.hideDockIcon")
-        KeychainHelper.shared.deletePassword(forAccount: "socks5_password")
+        UserDefaults.standard.removeObject(forKey: "sockystick.resetSafariNetworkingOnToggle")
+        KeychainHelper.shared.deletePassword(forAccount: "socks5_password_test")
         mockManager = MockNetworkProxyManager()
-        viewModel = ProxyStateViewModel(proxyManager: mockManager)
+        viewModel = ProxyStateViewModel(proxyManager: mockManager, keychainAccount: "socks5_password_test")
         viewModel.useAuthentication = false
         viewModel.proxyUsername = ""
         viewModel.proxyPassword = ""
     }
 
     override func tearDown() {
+        KeychainHelper.shared.deletePassword(forAccount: "socks5_password_test")
         viewModel = nil
         mockManager = nil
         super.tearDown()
@@ -198,5 +207,40 @@ final class ProxyStateViewModelTests: XCTestCase {
         
         viewModel.hideDockIcon = false
         viewModel.applyDockIconVisibility()
+    }
+
+    func testResetSafariNetworkingOnToggleDefaultAndBehavior() {
+        XCTAssertTrue(viewModel.resetSafariNetworkingOnToggle)
+        XCTAssertEqual(mockManager.resetSafariCalledCount, 0)
+
+        // Turning ON resets Safari Networking
+        viewModel.toggleProxy()
+        XCTAssertTrue(viewModel.isProxyEnabled)
+        XCTAssertEqual(mockManager.resetSafariCalledCount, 1)
+
+        // Turning OFF resets Safari Networking
+        viewModel.toggleProxy()
+        XCTAssertFalse(viewModel.isProxyEnabled)
+        XCTAssertEqual(mockManager.resetSafariCalledCount, 2)
+
+        // When disabled in settings, toggling does not reset Safari Networking
+        viewModel.resetSafariNetworkingOnToggle = false
+        viewModel.toggleProxy()
+        XCTAssertTrue(viewModel.isProxyEnabled)
+        XCTAssertEqual(mockManager.resetSafariCalledCount, 2)
+
+        // Quit when enabled respects setting
+        viewModel.disableProxyOnQuit()
+        XCTAssertEqual(mockManager.resetSafariCalledCount, 2)
+
+        // Re-enable setting and verify quit resets Safari Networking once when proxy was active
+        viewModel.resetSafariNetworkingOnToggle = true
+        viewModel.toggleProxy()
+        XCTAssertEqual(mockManager.resetSafariCalledCount, 3)
+        viewModel.disableProxyOnQuit()
+        XCTAssertEqual(mockManager.resetSafariCalledCount, 4)
+        // Second quit call while already disabled should not reset Safari again
+        viewModel.disableProxyOnQuit()
+        XCTAssertEqual(mockManager.resetSafariCalledCount, 4)
     }
 }

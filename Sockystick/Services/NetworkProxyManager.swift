@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import AppKit
 
 public protocol NetworkProxyManagerProtocol {
     func fetchDefaultDevice() -> String?
@@ -14,11 +15,22 @@ public protocol NetworkProxyManagerProtocol {
     func disableHTTPProxies(for interfaceName: String)
     func toggleSOCKSProxy(for interfaceName: String, host: String, port: Int, useAuthentication: Bool, username: String, password: String) -> ProxyConfig
     func disableAllSOCKSProxies(priorityInterfaceName: String?)
+    @discardableResult func resetSafariNetworking(synchronous: Bool) -> Int
 }
 
 public extension NetworkProxyManagerProtocol {
     func disableAllSOCKSProxies() {
         disableAllSOCKSProxies(priorityInterfaceName: nil)
+    }
+
+    @discardableResult
+    func resetSafariNetworking() -> Int {
+        return resetSafariNetworking(synchronous: false)
+    }
+
+    @discardableResult
+    func resetSafariNetworking(synchronous: Bool) -> Int {
+        return 0
     }
 }
 
@@ -317,12 +329,16 @@ public class NetworkProxyManager: NetworkProxyManagerProtocol {
         // Always ensure HTTP/HTTPS web proxies are disabled when managing SOCKS5
         disableHTTPProxies(for: interfaceName)
 
+        let result = runCommand(executablePath: "/usr/sbin/networksetup", arguments: ["-setsocksfirewallproxystate", interfaceName, stateStr])
+        let success = (result.exitCode == 0)
+
+        // Stop the local auth bridge AFTER disabling the system proxy so apps don't
+        // hit a dead 127.0.0.1:10800 listener during the networksetup transition,
+        // while still forcefully closing any lingering bridged connections.
         if !enabled {
             SOCKS5BridgeServer.shared.stop()
         }
 
-        let result = runCommand(executablePath: "/usr/sbin/networksetup", arguments: ["-setsocksfirewallproxystate", interfaceName, stateStr])
-        let success = (result.exitCode == 0)
         if success {
             LogStore.log(level: .success, category: "Proxy", message: "SOCKS5 proxy state on \(interfaceName) turned \(stateStr.uppercased())")
         } else {
@@ -399,5 +415,101 @@ public class NetworkProxyManager: NetworkProxyManagerProtocol {
             }
         }
         SOCKS5BridgeServer.shared.stop()
+    }
+
+    // MARK: - Safari Networking Pool Reset
+
+    public struct RunningProcessDescriptor: Equatable {
+        public let pid: pid_t
+        public let bundleIdentifier: String?
+        public let localizedName: String?
+
+        public init(pid: pid_t, bundleIdentifier: String?, localizedName: String?) {
+            self.pid = pid
+            self.bundleIdentifier = bundleIdentifier
+            self.localizedName = localizedName
+        }
+    }
+
+    public func findSafariNetworkingPIDs(in processes: [RunningProcessDescriptor]) -> [pid_t] {
+        processes.compactMap { proc in
+            guard proc.pid > 0,
+                  proc.bundleIdentifier == "com.apple.WebKit.Networking",
+                  let name = proc.localizedName,
+                  name.localizedCaseInsensitiveContains("Safari") else {
+                return nil
+            }
+            return proc.pid
+        }
+    }
+
+    /// Gracefully restarts Safari's background `com.apple.WebKit.Networking` XPC process
+    /// (keeping Safari windows, tabs, and WebContent processes intact) so Safari immediately
+    /// drops stale pre-proxy iCloud Private Relay QUIC tunnels on connect and stale proxied
+    /// connection pools on disconnect.
+    @discardableResult
+    public func resetSafariNetworking(synchronous: Bool = false) -> Int {
+        let descriptors = NSWorkspace.shared.runningApplications.map {
+            RunningProcessDescriptor(
+                pid: $0.processIdentifier,
+                bundleIdentifier: $0.bundleIdentifier,
+                localizedName: $0.localizedName
+            )
+        }
+        let pids = findSafariNetworkingPIDs(in: descriptors)
+        guard !pids.isEmpty else {
+            LogStore.log(
+                level: .info,
+                category: "Safari",
+                message: "Safari Networking is not running; no connection pool reset needed"
+            )
+            return 0
+        }
+
+        var resetCount = 0
+        var signaledPIDs: [pid_t] = []
+        for pid in pids {
+            if Darwin.kill(pid, SIGTERM) == 0 {
+                resetCount += 1
+                signaledPIDs.append(pid)
+                LogStore.log(
+                    level: .info,
+                    category: "Safari",
+                    message: "Signaled Safari Networking process (PID \(pid)) to flush pooled connections"
+                )
+            } else {
+                let errCode = errno
+                LogStore.log(
+                    level: .warning,
+                    category: "Safari",
+                    message: "Failed to signal Safari Networking (PID \(pid)): errno \(errCode)"
+                )
+            }
+        }
+
+        // com.apple.WebKit.Networking is a libxpc transaction-managed service that traps
+        // SIGTERM and waits after draining transactions rather than exiting on its own.
+        // Give it a short grace period to drain transactions, then send SIGKILL if still
+        // alive so Safari transparently respawns a clean Networking XPC process.
+        if !signaledPIDs.isEmpty {
+            let finishReset = {
+                for pid in signaledPIDs where Darwin.kill(pid, 0) == 0 {
+                    if Darwin.kill(pid, SIGKILL) == 0 {
+                        LogStore.log(
+                            level: .info,
+                            category: "Safari",
+                            message: "Completed Safari Networking reset (PID \(pid)) so Safari respawns with updated proxy routing"
+                        )
+                    }
+                }
+            }
+            if synchronous {
+                Thread.sleep(forTimeInterval: 0.15)
+                finishReset()
+            } else {
+                DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 0.15, execute: finishReset)
+            }
+        }
+        return resetCount
     }
 }

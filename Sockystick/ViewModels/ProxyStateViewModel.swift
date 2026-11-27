@@ -35,6 +35,13 @@ public final class ProxyStateViewModel: ObservableObject {
         }
     }
 
+    @Published public var resetSafariNetworkingOnToggle: Bool {
+        didSet {
+            UserDefaults.standard.set(resetSafariNetworkingOnToggle, forKey: "sockystick.resetSafariNetworkingOnToggle")
+            LogStore.log(level: .info, category: "Settings", message: "Reset Safari networking on toggle changed to \(resetSafariNetworkingOnToggle)")
+        }
+    }
+
     @Published public var launchAtLogin: Bool = false {
         didSet {
             guard launchAtLogin != (SMAppService.mainApp.status == .enabled) else { return }
@@ -64,20 +71,31 @@ public final class ProxyStateViewModel: ObservableObject {
     }
 
     private let proxyManager: NetworkProxyManagerProtocol
+    private let keychainAccount: String
     private var cancellables = Set<AnyCancellable>()
     private var timer: Timer?
 
-    public init(proxyManager: NetworkProxyManagerProtocol = NetworkProxyManager.shared) {
+    public init(
+        proxyManager: NetworkProxyManagerProtocol = NetworkProxyManager.shared,
+        keychainAccount: String = "socks5_password"
+    ) {
         self.proxyManager = proxyManager
+        self.keychainAccount = keychainAccount
         
         let savedHost = UserDefaults.standard.string(forKey: "sockystick.proxyHost") ?? "127.0.0.1"
         let savedPort = UserDefaults.standard.string(forKey: "sockystick.proxyPort") ?? "1080"
         let savedUser = UserDefaults.standard.string(forKey: "sockystick.proxyUsername") ?? ""
-        let savedPass = KeychainHelper.shared.readPassword(forAccount: "socks5_password") ?? ""
+        let savedPass = KeychainHelper.shared.readPassword(forAccount: keychainAccount) ?? ""
         
         let hasAuth = (!savedUser.isEmpty || !savedPass.isEmpty) || UserDefaults.standard.bool(forKey: "sockystick.useAuthentication")
         let savedAutoStart = UserDefaults.standard.bool(forKey: "sockystick.autoStartProxyOnLaunch")
         let savedHideDockIcon = UserDefaults.standard.bool(forKey: "sockystick.hideDockIcon")
+        let savedResetSafari: Bool
+        if UserDefaults.standard.object(forKey: "sockystick.resetSafariNetworkingOnToggle") == nil {
+            savedResetSafari = true
+        } else {
+            savedResetSafari = UserDefaults.standard.bool(forKey: "sockystick.resetSafariNetworkingOnToggle")
+        }
         
         self.proxyHost = savedHost
         self.proxyPortString = savedPort
@@ -86,6 +104,7 @@ public final class ProxyStateViewModel: ObservableObject {
         self.proxyPassword = savedPass
         self.hideDockIcon = savedHideDockIcon
         self.autoStartProxyOnLaunch = savedAutoStart
+        self.resetSafariNetworkingOnToggle = savedResetSafari
         self.launchAtLogin = (SMAppService.mainApp.status == .enabled)
 
         setupPersistenceSubscribers()
@@ -94,9 +113,9 @@ public final class ProxyStateViewModel: ObservableObject {
         applyDockIconVisibility()
 
         // Ensure SOCKS5 proxy & local auth bridge are running if proxy is active or auto-start is set
-        if isProxyEnabled || savedAutoStart {
+        if (isProxyEnabled || savedAutoStart) && NSClassFromString("XCTestCase") == nil {
             LogStore.log(level: .info, category: "AppLaunch", message: "Ensuring SOCKS5 proxy & auth bridge active on launch")
-            setProxyState(true)
+            setProxyState(true, forceSafariReset: true)
         }
 
         startPeriodicRefresh()
@@ -149,11 +168,12 @@ public final class ProxyStateViewModel: ObservableObject {
         $proxyPassword
             .dropFirst()
             .sink { [weak self] password in
-                KeychainHelper.shared.savePassword(password, forAccount: "socks5_password")
-                if !password.isEmpty, let self = self, !self.useAuthentication {
+                guard let self = self else { return }
+                KeychainHelper.shared.savePassword(password, forAccount: self.keychainAccount)
+                if !password.isEmpty, !self.useAuthentication {
                     self.useAuthentication = true
                 }
-                if let self = self, self.isProxyEnabled {
+                if self.isProxyEnabled {
                     self.setProxyState(true)
                 }
             }
@@ -254,6 +274,7 @@ public final class ProxyStateViewModel: ObservableObject {
         }
         let effectiveAuth = useAuthentication
 
+        let previousEnabled = isProxyEnabled
         let resultConfig = proxyManager.toggleSOCKSProxy(
             for: currentIface.name,
             host: host,
@@ -263,6 +284,10 @@ public final class ProxyStateViewModel: ObservableObject {
             password: password
         )
         self.isProxyEnabled = resultConfig.isEnabled
+
+        if resultConfig.isEnabled != previousEnabled {
+            resetSafariNetworkingIfEnabled()
+        }
 
         if resultConfig.isEnabled {
             let authLabel = effectiveAuth ? " (Auth: \(username))" : ""
@@ -277,11 +302,12 @@ public final class ProxyStateViewModel: ObservableObject {
         isUpdating = false
     }
 
-    public func setProxyState(_ enable: Bool) {
+    public func setProxyState(_ enable: Bool, forceSafariReset: Bool = false) {
         guard let currentIface = activeInterface else {
             LogStore.log(level: .error, category: "State", message: "Cannot set proxy state: No interface selected")
             return
         }
+        let previousEnabled = isProxyEnabled
         let host = proxyHost.trimmingCharacters(in: .whitespaces)
         let port = parsedPort
         let username = proxyUsername.trimmingCharacters(in: .whitespaces)
@@ -308,15 +334,28 @@ public final class ProxyStateViewModel: ObservableObject {
             _ = proxyManager.setSOCKSProxyState(for: currentIface.name, enabled: false)
         }
         refreshStatus()
+
+        if (isProxyEnabled != previousEnabled) || (forceSafariReset && isProxyEnabled) {
+            resetSafariNetworkingIfEnabled()
+        }
     }
 
     public func disableProxyOnQuit() {
         LogStore.log(level: .info, category: "Lifecycle", message: "Application quit triggered: Disabling SOCKS5 proxy")
+        let wasEnabled = isProxyEnabled
         let priority = activeInterface?.name
         proxyManager.disableAllSOCKSProxies(priorityInterfaceName: priority)
         SOCKS5BridgeServer.shared.stop()
         self.isProxyEnabled = false
         self.statusMessage = "SOCKS5 Proxy Disabled"
+        if wasEnabled {
+            resetSafariNetworkingIfEnabled(synchronous: true)
+        }
+    }
+
+    private func resetSafariNetworkingIfEnabled(synchronous: Bool = false) {
+        guard resetSafariNetworkingOnToggle else { return }
+        _ = proxyManager.resetSafariNetworking(synchronous: synchronous)
     }
 
     public func selectInterface(_ interface: NetworkInterface) {
@@ -345,6 +384,7 @@ public final class ProxyStateViewModel: ObservableObject {
                 password: proxyPassword
             )
             refreshStatus()
+            resetSafariNetworkingIfEnabled()
         }
     }
 

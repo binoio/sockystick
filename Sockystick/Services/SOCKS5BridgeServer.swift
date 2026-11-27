@@ -14,13 +14,42 @@ public final class SOCKS5BridgeServer {
 
     private var listener: NWListener?
     private let queue = DispatchQueue(label: "com.sockystick.socks5bridge", qos: .userInitiated)
+    private let queueKey = DispatchSpecificKey<Void>()
+    private var activeConnections: [ObjectIdentifier: NWConnection] = [:]
 
     private var upstreamHost: String = ""
     private var upstreamPort: UInt16 = 1080
     private var username: String = ""
     private var password: String = ""
 
-    public init() {}
+    public init() {
+        queue.setSpecific(key: queueKey, value: ())
+    }
+
+    public var activeConnectionCount: Int {
+        onQueueSync { activeConnections.count }
+    }
+
+    private func onQueueSync<T>(_ work: () -> T) -> T {
+        if DispatchQueue.getSpecific(key: queueKey) != nil {
+            return work()
+        }
+        return queue.sync(execute: work)
+    }
+
+    private func trackConnection(_ connection: NWConnection) {
+        activeConnections[ObjectIdentifier(connection)] = connection
+    }
+
+    private func closeConnection(_ connection: NWConnection) {
+        activeConnections.removeValue(forKey: ObjectIdentifier(connection))
+        connection.cancel()
+    }
+
+    private func closePair(_ first: NWConnection, _ second: NWConnection) {
+        closeConnection(first)
+        closeConnection(second)
+    }
 
     public func start(
         port: UInt16 = 10800,
@@ -86,9 +115,26 @@ public final class SOCKS5BridgeServer {
     }
 
     public func stop() {
-        listener?.cancel()
-        listener = nil
-        isRunning = false
+        let closedCount: Int = onQueueSync {
+            listener?.cancel()
+            listener = nil
+            isRunning = false
+
+            let count = activeConnections.count
+            for connection in activeConnections.values {
+                connection.cancel()
+            }
+            activeConnections.removeAll()
+            return count
+        }
+
+        if closedCount > 0 {
+            LogStore.log(
+                level: .info,
+                category: "Bridge",
+                message: "Closed \(closedCount) active bridged connection(s) on bridge stop"
+            )
+        }
     }
 
     // MARK: - Socket Buffer Reading Helper
@@ -130,21 +176,22 @@ public final class SOCKS5BridgeServer {
     // MARK: - Connection Handling
 
     private func handleClientConnection(_ clientConn: NWConnection) {
+        trackConnection(clientConn)
         clientConn.start(queue: queue)
 
         // Read Client Greeting (minimum 2 bytes: VER, NMETHODS)
         readUntil(connection: clientConn, currentBuffer: Data(), minimumLength: 2) { [weak self] greetingHeader in
             guard let self = self, let greetingHeader = greetingHeader, greetingHeader[0] == 0x05 else {
-                clientConn.cancel()
+                self?.closeConnection(clientConn)
                 return
             }
 
             let nMethods = Int(greetingHeader[1])
             let fullGreetingLen = 2 + nMethods
 
-            self.readUntil(connection: clientConn, currentBuffer: greetingHeader, minimumLength: fullGreetingLen) { fullGreetingData in
-                guard let fullGreetingData = fullGreetingData, fullGreetingData.count >= fullGreetingLen else {
-                    clientConn.cancel()
+            self.readUntil(connection: clientConn, currentBuffer: greetingHeader, minimumLength: fullGreetingLen) { [weak self] fullGreetingData in
+                guard let self = self, let fullGreetingData = fullGreetingData, fullGreetingData.count >= fullGreetingLen else {
+                    self?.closeConnection(clientConn)
                     return
                 }
 
@@ -152,12 +199,12 @@ public final class SOCKS5BridgeServer {
 
                 // Reply to local client: NO AUTH REQUIRED (0x00) on 127.0.0.1 bridge
                 let reply = Data([0x05, 0x00])
-                clientConn.send(content: reply, completion: .contentProcessed({ [weak self] err in
+                clientConn.send(content: reply, completion: .contentProcessed({ err in
                     guard err == nil else {
-                        clientConn.cancel()
+                        self.closeConnection(clientConn)
                         return
                     }
-                    self?.processClientRequestBuffer(clientConn: clientConn, buffer: extraData)
+                    self.processClientRequestBuffer(clientConn: clientConn, buffer: extraData)
                 }))
             }
         }
@@ -167,7 +214,7 @@ public final class SOCKS5BridgeServer {
         // Read at least 4 bytes of SOCKS5 CONNECT header: VER (0x05), CMD, RSV, ATYP
         readUntil(connection: clientConn, currentBuffer: buffer, minimumLength: 4) { [weak self] headerBuffer in
             guard let self = self, let headerBuffer = headerBuffer, headerBuffer[0] == 0x05 else {
-                clientConn.cancel()
+                self?.closeConnection(clientConn)
                 return
             }
 
@@ -181,14 +228,14 @@ public final class SOCKS5BridgeServer {
             case 0x03: // Domain: 1 byte domain length + domain bytes + 2 bytes Port
                 self.readUntil(connection: clientConn, currentBuffer: headerBuffer, minimumLength: 5) { domainLenBuf in
                     guard let domainLenBuf = domainLenBuf, domainLenBuf.count >= 5 else {
-                        clientConn.cancel()
+                        self.closeConnection(clientConn)
                         return
                     }
                     let domainLen = Int(domainLenBuf[4])
                     let fullLen = 4 + 1 + domainLen + 2
                     self.readUntil(connection: clientConn, currentBuffer: domainLenBuf, minimumLength: fullLen) { fullReqBuf in
                         guard let fullReqBuf = fullReqBuf, fullReqBuf.count >= fullLen else {
-                            clientConn.cancel()
+                            self.closeConnection(clientConn)
                             return
                         }
                         let clientRequestData = fullReqBuf.subdata(in: 0..<fullLen)
@@ -198,13 +245,13 @@ public final class SOCKS5BridgeServer {
                 }
                 return
             default:
-                clientConn.cancel()
+                self.closeConnection(clientConn)
                 return
             }
 
             self.readUntil(connection: clientConn, currentBuffer: headerBuffer, minimumLength: minRequestLen) { fullReqBuf in
                 guard let fullReqBuf = fullReqBuf, fullReqBuf.count >= minRequestLen else {
-                    clientConn.cancel()
+                    self.closeConnection(clientConn)
                     return
                 }
                 let clientRequestData = fullReqBuf.subdata(in: 0..<minRequestLen)
@@ -222,6 +269,7 @@ public final class SOCKS5BridgeServer {
             port: NWEndpoint.Port(rawValue: upstreamPort)!,
             using: params
         )
+        trackConnection(upstreamConn)
 
         upstreamConn.stateUpdateHandler = { [weak self] state in
             guard let self = self else { return }
@@ -240,6 +288,7 @@ public final class SOCKS5BridgeServer {
                     message: "Bridge failed connecting to remote SOCKS5 server \(self.upstreamHost):\(self.upstreamPort)",
                     details: err.localizedDescription
                 )
+                self.closeConnection(upstreamConn)
                 self.sendClientErrorReply(clientConn: clientConn, rep: 0x05)
             default:
                 break
@@ -258,12 +307,14 @@ public final class SOCKS5BridgeServer {
         let upstreamGreeting = Data([0x05, 0x02, 0x00, 0x02])
         upstreamConn.send(content: upstreamGreeting, completion: .contentProcessed({ [weak self] err in
             guard let self = self, err == nil else {
+                self?.closeConnection(upstreamConn)
                 self?.sendClientErrorReply(clientConn: clientConn, rep: 0x01)
                 return
             }
 
             self.readUntil(connection: upstreamConn, currentBuffer: Data(), minimumLength: 2) { replyData in
                 guard let replyData = replyData, replyData.count >= 2, replyData[0] == 0x05 else {
+                    self.closeConnection(upstreamConn)
                     self.sendClientErrorReply(clientConn: clientConn, rep: 0x01)
                     return
                 }
@@ -285,6 +336,7 @@ public final class SOCKS5BridgeServer {
                     )
                 } else {
                     LogStore.log(level: .error, category: "Bridge", message: "Upstream SOCKS5 server rejected available auth methods (Method: \(chosenMethod))")
+                    self.closeConnection(upstreamConn)
                     self.sendClientErrorReply(clientConn: clientConn, rep: 0x07)
                 }
             }
@@ -307,6 +359,7 @@ public final class SOCKS5BridgeServer {
 
         upstreamConn.send(content: authPacket, completion: .contentProcessed({ [weak self] err in
             guard let self = self, err == nil else {
+                self?.closeConnection(upstreamConn)
                 self?.sendClientErrorReply(clientConn: clientConn, rep: 0x01)
                 return
             }
@@ -314,6 +367,7 @@ public final class SOCKS5BridgeServer {
             self.readUntil(connection: upstreamConn, currentBuffer: Data(), minimumLength: 2) { authResp in
                 guard let authResp = authResp, authResp.count >= 2, authResp[1] == 0x00 else {
                     LogStore.log(level: .error, category: "Bridge", message: "Upstream SOCKS5 proxy rejected credentials for user '\(self.username)'")
+                    self.closeConnection(upstreamConn)
                     self.sendClientErrorReply(clientConn: clientConn, rep: 0x05)
                     return
                 }
@@ -336,12 +390,14 @@ public final class SOCKS5BridgeServer {
     ) {
         upstreamConn.send(content: clientRequestData, completion: .contentProcessed({ [weak self] err in
             guard let self = self, err == nil else {
+                self?.closeConnection(upstreamConn)
                 self?.sendClientErrorReply(clientConn: clientConn, rep: 0x01)
                 return
             }
 
             self.readUntil(connection: upstreamConn, currentBuffer: Data(), minimumLength: 4) { replyHeader in
                 guard let replyHeader = replyHeader, replyHeader.count >= 4, replyHeader[0] == 0x05 else {
+                    self.closeConnection(upstreamConn)
                     self.sendClientErrorReply(clientConn: clientConn, rep: 0x01)
                     return
                 }
@@ -354,6 +410,7 @@ public final class SOCKS5BridgeServer {
                 case 0x03:
                     self.readUntil(connection: upstreamConn, currentBuffer: replyHeader, minimumLength: 5) { domainHeader in
                         guard let domainHeader = domainHeader, domainHeader.count >= 5 else {
+                            self.closeConnection(upstreamConn)
                             self.sendClientErrorReply(clientConn: clientConn, rep: 0x01)
                             return
                         }
@@ -361,6 +418,7 @@ public final class SOCKS5BridgeServer {
                         let fullLen = 4 + 1 + domainLen + 2
                         self.readUntil(connection: upstreamConn, currentBuffer: domainHeader, minimumLength: fullLen) { fullReply in
                             guard let fullReply = fullReply, fullReply.count >= fullLen else {
+                                self.closeConnection(upstreamConn)
                                 self.sendClientErrorReply(clientConn: clientConn, rep: 0x01)
                                 return
                             }
@@ -374,12 +432,14 @@ public final class SOCKS5BridgeServer {
                     }
                     return
                 default:
+                    self.closeConnection(upstreamConn)
                     self.sendClientErrorReply(clientConn: clientConn, rep: 0x08)
                     return
                 }
 
                 self.readUntil(connection: upstreamConn, currentBuffer: replyHeader, minimumLength: reqReplyLen) { fullReply in
                     guard let fullReply = fullReply, fullReply.count >= reqReplyLen else {
+                        self.closeConnection(upstreamConn)
                         self.sendClientErrorReply(clientConn: clientConn, rep: 0x01)
                         return
                     }
@@ -402,16 +462,14 @@ public final class SOCKS5BridgeServer {
     ) {
         clientConn.send(content: replyData, completion: .contentProcessed({ [weak self] err in
             guard let self = self, err == nil else {
-                clientConn.cancel()
-                upstreamConn.cancel()
+                self?.closePair(clientConn, upstreamConn)
                 return
             }
 
             if !initialPayload.isEmpty {
                 upstreamConn.send(content: initialPayload, completion: .contentProcessed({ [weak self] sendErr in
                     guard sendErr == nil else {
-                        clientConn.cancel()
-                        upstreamConn.cancel()
+                        self?.closePair(clientConn, upstreamConn)
                         return
                     }
                     self?.startPiping(clientConn: clientConn, upstreamConn: upstreamConn)
@@ -435,21 +493,19 @@ public final class SOCKS5BridgeServer {
                     if sendErr == nil && !isComplete {
                         self?.pipeConnection(from: source, to: destination)
                     } else {
-                        source.cancel()
-                        destination.cancel()
+                        self?.closePair(source, destination)
                     }
                 }))
             } else if isComplete || error != nil {
-                source.cancel()
-                destination.cancel()
+                self?.closePair(source, destination)
             }
         }
     }
 
     private func sendClientErrorReply(clientConn: NWConnection, rep: UInt8) {
         let errReply = Data([0x05, rep, 0x00, 0x01, 0, 0, 0, 0, 0, 0])
-        clientConn.send(content: errReply, completion: .contentProcessed({ _ in
-            clientConn.cancel()
+        clientConn.send(content: errReply, completion: .contentProcessed({ [weak self] _ in
+            self?.closeConnection(clientConn)
         }))
     }
 }

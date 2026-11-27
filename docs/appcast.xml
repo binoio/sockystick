@@ -6,6 +6,22 @@
         <description>Most recent updates for Sockystick.</description>
         <language>en</language>
         <item>
+            <title>1.0.6</title>
+            <pubDate>Fri, 27 Nov 2026 18:23:54 -0500</pubDate>
+            <sparkle:version>1.0.6</sparkle:version>
+            <sparkle:shortVersionString>1.0.6</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Sockystick 1.0.6</h2>
+<p>Sockystick 1.0.6 adds clean connection handoff for Safari and iCloud Private Relay so Safari immediately obeys the SOCKS5 proxy on connect and returns cleanly on disconnect.</p>
+<ul>
+  <li><strong>Safari &amp; iCloud Private Relay Handoff</strong>: Automatically restarts Safari's background <code>Safari Networking</code> XPC process on connect, disconnect, and quit (keeping windows and tabs open) so cached iCloud Private Relay QUIC tunnels and stale proxy pools are flushed immediately. Configurable in <strong>Settings &rarr; General</strong>.</li>
+  <li><strong>Clean Bridge Teardown</strong>: Tracks and closes all active bridged connections when stopping the local SOCKS5 auth bridge, and disables the macOS SOCKS5 proxy before stopping the bridge to eliminate transition errors.</li>
+  <li><strong>Default Host</strong>: Defaults the proxy host to <code>127.0.0.1</code> instead of a private LAN address for fresh setups.</li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/binoio/sockystick/releases/download/v1.0.6/Sockystick-1.0.6.zip" length="3784983" type="application/octet-stream" sparkle:edSignature="uBGEMtykyRWmey/wVGD58Wl4neRg7cD+B9xn2f+DZwjOT1Xw+xK+oI//ShVUV2PNDPcHwsj3SdKsGPyZLD9nBA=="/>
+        </item>
+        <item>
             <title>1.0.5</title>
             <pubDate>Sun, 13 Sep 2026 09:46:04 -0400</pubDate>
             <sparkle:version>1.0.5</sparkle:version>
@@ -33,22 +49,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://github.com/binoio/sockystick/releases/download/v1.0.4/Sockystick-1.0.4.zip" length="4645277" type="application/octet-stream" sparkle:edSignature="XgMo/RRZkhWfgHrN9d3SpqPd14/rasS5rYNLTTH5V7TN7SXMmYxWSgffRRSMREBKx7MnLlA1qcAjY3ivUsE0BA=="/>
-        </item>
-        <item>
-            <title>1.0.3</title>
-            <pubDate>Sat, 12 Sep 2026 21:10:19 -0400</pubDate>
-            <sparkle:version>1.0.3</sparkle:version>
-            <sparkle:shortVersionString>1.0.3</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Sockystick 1.0.3</h2>
-<p>Sockystick 1.0.3 brings a refreshed squircle-filling app icon and an option to hide the Dock icon, allowing Sockystick to run exclusively in the menu bar.</p>
-<ul>
-  <li><strong>Option for No Dock Icon</strong>: Configure Sockystick to run exclusively from the menu bar extra with the Dock icon hidden via Settings &gt; General &gt; Appearance.</li>
-  <li><strong>Updated App Icon</strong>: High-fidelity icon tightly filling the macOS squircle without border or drop-shadow artifacts.</li>
-  <li><strong>Seamless Window Activation</strong>: Starts quietly in the menu bar when the Dock icon is hidden, while opening windows from the menu bar brings them forward smoothly.</li>
-</ul>
-]]></description>
-            <enclosure url="https://github.com/binoio/sockystick/releases/download/v1.0.3/Sockystick-1.0.3.zip" length="5143227" type="application/octet-stream" sparkle:edSignature="DGxpZkymHKXaiODxpNCVYgHUTV+7USWaL6kztECpT8sad97GXZ/Sf93aknrl1af+gUa2WUU/LmnsjyeP++weCA=="/>
         </item>
     </channel>
 </rss>

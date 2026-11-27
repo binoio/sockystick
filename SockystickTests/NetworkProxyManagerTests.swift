@@ -98,4 +98,18 @@ final class NetworkProxyManagerTests: XCTestCase {
         XCTAssertEqual(config.host, "")
         XCTAssertEqual(config.port, 1080)
     }
+
+    func testFindSafariNetworkingPIDsFiltersStrictlyToSafari() {
+        let processes = [
+            NetworkProxyManager.RunningProcessDescriptor(pid: 100, bundleIdentifier: "com.apple.Safari", localizedName: "Safari"),
+            NetworkProxyManager.RunningProcessDescriptor(pid: 200, bundleIdentifier: "com.apple.WebKit.Networking", localizedName: "Safari Networking"),
+            NetworkProxyManager.RunningProcessDescriptor(pid: 201, bundleIdentifier: "com.apple.WebKit.Networking", localizedName: "Safari Technology Preview Networking"),
+            NetworkProxyManager.RunningProcessDescriptor(pid: 300, bundleIdentifier: "com.apple.WebKit.Networking", localizedName: "Mail Networking"),
+            NetworkProxyManager.RunningProcessDescriptor(pid: 301, bundleIdentifier: "com.apple.WebKit.WebContent", localizedName: "Safari Web Content"),
+            NetworkProxyManager.RunningProcessDescriptor(pid: 0, bundleIdentifier: "com.apple.WebKit.Networking", localizedName: "Safari Networking")
+        ]
+
+        let pids = manager.findSafariNetworkingPIDs(in: processes)
+        XCTAssertEqual(pids, [200, 201])
+    }
 }

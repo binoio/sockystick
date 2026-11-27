@@ -1,0 +1,7 @@
+<h2>Sockystick 1.0.6</h2>
+<p>Sockystick 1.0.6 adds clean connection handoff for Safari and iCloud Private Relay so Safari immediately obeys the SOCKS5 proxy on connect and returns cleanly on disconnect.</p>
+<ul>
+  <li><strong>Safari &amp; iCloud Private Relay Handoff</strong>: Automatically restarts Safari's background <code>Safari Networking</code> XPC process on connect, disconnect, and quit (keeping windows and tabs open) so cached iCloud Private Relay QUIC tunnels and stale proxy pools are flushed immediately. Configurable in <strong>Settings &rarr; General</strong>.</li>
+  <li><strong>Clean Bridge Teardown</strong>: Tracks and closes all active bridged connections when stopping the local SOCKS5 auth bridge, and disables the macOS SOCKS5 proxy before stopping the bridge to eliminate transition errors.</li>
+  <li><strong>Default Host</strong>: Defaults the proxy host to <code>127.0.0.1</code> instead of a private LAN address for fresh setups.</li>
+</ul>
