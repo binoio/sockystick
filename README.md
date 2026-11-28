@@ -8,6 +8,7 @@ A macOS GUI Dock and Menu Bar app for quickly toggling SOCKS5 proxy configuratio
 
 - **One-Click Proxy Toggle**: Easily enable or disable SOCKS5 proxy state on active default or selected network interfaces (`Wi-Fi`, `Ethernet`).
 - **Dock & Menu Bar Modes**: Control proxy settings from the status item popover or the main desktop window.
+- **LAN DNS Resolution**: Resolves hostnames on your LAN DNS server (e.g. Pi-hole) before forwarding, so split-horizon names reach LAN vhosts instead of WAN addresses when the remote proxy's resolver disagrees. Falls back to remote resolution on failure. Configurable in **Settings → General**.
 - **Auto-Detection**: Automatically identifies your active default network device (e.g. `en0`) and maps it to the system network setup service.
 - **Sparkle 2 Updates**: Integrated automatic software updates signed with EdDSA keys.
 - **Developer ID & Notarization**: Native macOS app built with Swift and SwiftUI, signed with Apple Developer ID.

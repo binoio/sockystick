@@ -24,6 +24,7 @@
 		B15 /* LogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F16; };
 		B16 /* LogsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F17; };
 		B17 /* SOCKS5BridgeServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F18; };
+		B19 /* LANDNSResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = F19; };
 
 		BT01 /* NetworkProxyManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT01; };
 		BT02 /* ProxyConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT02; };
@@ -31,6 +32,7 @@
 		BT04 /* KeychainHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT04; };
 		BT05 /* LogStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT05; };
 		BT06 /* SOCKS5BridgeServerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT06; };
+		BT07 /* LANDNSResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT07; };
 
 		BU01 /* SockystickUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FU01; };
 /* End PBXBuildFile section */
@@ -71,6 +73,7 @@
 		F16 /* LogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogStore.swift; sourceTree = "<group>"; };
 		F17 /* LogsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogsView.swift; sourceTree = "<group>"; };
 		F18 /* SOCKS5BridgeServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SOCKS5BridgeServer.swift; sourceTree = "<group>"; };
+		F19 /* LANDNSResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LANDNSResolver.swift; sourceTree = "<group>"; };
 
 		P02 /* Sockystick.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sockystick.app; sourceTree = BUILT_PRODUCTS_DIR; };
 
@@ -80,6 +83,7 @@
 		FT04 /* KeychainHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelperTests.swift; sourceTree = "<group>"; };
 		FT05 /* LogStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogStoreTests.swift; sourceTree = "<group>"; };
 		FT06 /* SOCKS5BridgeServerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SOCKS5BridgeServerTests.swift; sourceTree = "<group>"; };
+		FT07 /* LANDNSResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LANDNSResolverTests.swift; sourceTree = "<group>"; };
 		PT01 /* SockystickTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SockystickTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 
 		FU01 /* SockystickUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SockystickUITests.swift; sourceTree = "<group>"; };
@@ -154,6 +158,7 @@
 				F14 /* KeychainHelper.swift */,
 				F16 /* LogStore.swift */,
 				F18 /* SOCKS5BridgeServer.swift */,
+				F19 /* LANDNSResolver.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -188,6 +193,7 @@
 				FT04 /* KeychainHelperTests.swift */,
 				FT05 /* LogStoreTests.swift */,
 				FT06 /* SOCKS5BridgeServerTests.swift */,
+				FT07 /* LANDNSResolverTests.swift */,
 			);
 			path = SockystickTests;
 			sourceTree = "<group>";
@@ -344,6 +350,7 @@
 				B15 /* LogStore.swift in Sources */,
 				B16 /* LogsView.swift in Sources */,
 				B17 /* SOCKS5BridgeServer.swift in Sources */,
+				B19 /* LANDNSResolver.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -357,6 +364,7 @@
 				BT04 /* KeychainHelperTests.swift in Sources */,
 				BT05 /* LogStoreTests.swift in Sources */,
 				BT06 /* SOCKS5BridgeServerTests.swift in Sources */,
+				BT07 /* LANDNSResolverTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -460,14 +468,14 @@
 				CODE_SIGN_ENTITLEMENTS = Sockystick/Sockystick.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.6;
+				CURRENT_PROJECT_VERSION = 1.0.7;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sockystick/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.6;
+				MARKETING_VERSION = 1.0.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.binoio.sockystick;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_UPTO_DATE_CHECK = YES;
@@ -483,14 +491,14 @@
 				CODE_SIGN_ENTITLEMENTS = Sockystick/Sockystick.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.6;
+				CURRENT_PROJECT_VERSION = 1.0.7;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sockystick/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.6;
+				MARKETING_VERSION = 1.0.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.binoio.sockystick;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_UPTO_DATE_CHECK = YES;

@@ -42,6 +42,37 @@ public final class ProxyStateViewModel: ObservableObject {
         }
     }
 
+    /// Resolve hostnames via the LAN DNS server (e.g. Pi-hole) in the local bridge before forwarding.
+    @Published public var lanDNSEnabled: Bool = LANDNSSettings.load().isEnabled {
+        didSet {
+            guard lanDNSEnabled != oldValue else { return }
+            UserDefaults.standard.set(lanDNSEnabled, forKey: LANDNSSettings.enabledKey)
+            LogStore.log(level: .info, category: "Settings", message: "LAN DNS resolution changed to \(lanDNSEnabled)")
+            applyLANDNSSettings()
+        }
+    }
+
+    /// Explicit LAN DNS server; empty auto-detects the system's private IPv4 resolver.
+    @Published public var lanDNSServer: String = LANDNSSettings.load().server {
+        didSet { UserDefaults.standard.set(lanDNSServer.trimmingCharacters(in: .whitespaces), forKey: LANDNSSettings.serverKey) }
+    }
+
+    /// Domain suffixes to resolve on the LAN; empty means all hostnames.
+    @Published public var lanDNSDomains: String = LANDNSSettings.load().domains {
+        didSet { UserDefaults.standard.set(lanDNSDomains, forKey: LANDNSSettings.domainsKey) }
+    }
+
+    /// Detected LAN DNS server shown as the placeholder in Settings.
+    public var detectedLANDNSServer: String {
+        LANDNSResolver.systemLANDNSServer() ?? "none detected"
+    }
+
+    /// Restarts the bridge with the current LAN DNS settings when the proxy is on.
+    public func applyLANDNSSettings() {
+        guard isProxyEnabled else { return }
+        setProxyState(true)
+    }
+
     @Published public var launchAtLogin: Bool = false {
         didSet {
             guard launchAtLogin != (SMAppService.mainApp.status == .enabled) else { return }

@@ -88,16 +88,23 @@ final class ProxyStateViewModelTests: XCTestCase {
     var mockManager: MockNetworkProxyManager!
     var viewModel: ProxyStateViewModel!
 
+    /// Tests run inside the real app host and share its defaults domain; snapshot and restore
+    /// every key they touch so running the suite never wipes the user's saved proxy settings.
+    static let isolatedDefaultsKeys = [
+        "sockystick.proxyHost", "sockystick.proxyPort", "sockystick.useAuthentication",
+        "sockystick.proxyUsername", "sockystick.proxyPassword", "sockystick.autoStartProxyOnLaunch",
+        "sockystick.hideDockIcon", "sockystick.resetSafariNetworkingOnToggle",
+        LANDNSSettings.enabledKey, LANDNSSettings.serverKey, LANDNSSettings.domainsKey
+    ]
+    private var savedDefaults: [String: Any] = [:]
+
     override func setUp() {
         super.setUp()
-        UserDefaults.standard.removeObject(forKey: "sockystick.proxyHost")
-        UserDefaults.standard.removeObject(forKey: "sockystick.proxyPort")
-        UserDefaults.standard.removeObject(forKey: "sockystick.useAuthentication")
-        UserDefaults.standard.removeObject(forKey: "sockystick.proxyUsername")
-        UserDefaults.standard.removeObject(forKey: "sockystick.proxyPassword")
-        UserDefaults.standard.removeObject(forKey: "sockystick.autoStartProxyOnLaunch")
-        UserDefaults.standard.removeObject(forKey: "sockystick.hideDockIcon")
-        UserDefaults.standard.removeObject(forKey: "sockystick.resetSafariNetworkingOnToggle")
+        savedDefaults = [:]
+        for key in Self.isolatedDefaultsKeys {
+            if let value = UserDefaults.standard.object(forKey: key) { savedDefaults[key] = value }
+            UserDefaults.standard.removeObject(forKey: key)
+        }
         KeychainHelper.shared.deletePassword(forAccount: "socks5_password_test")
         mockManager = MockNetworkProxyManager()
         viewModel = ProxyStateViewModel(proxyManager: mockManager, keychainAccount: "socks5_password_test")
@@ -110,6 +117,13 @@ final class ProxyStateViewModelTests: XCTestCase {
         KeychainHelper.shared.deletePassword(forAccount: "socks5_password_test")
         viewModel = nil
         mockManager = nil
+        for key in Self.isolatedDefaultsKeys {
+            if let value = savedDefaults[key] {
+                UserDefaults.standard.set(value, forKey: key)
+            } else {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
+        }
         super.tearDown()
     }
 

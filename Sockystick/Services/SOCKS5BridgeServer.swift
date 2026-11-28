@@ -21,6 +21,10 @@ public final class SOCKS5BridgeServer {
     private var upstreamPort: UInt16 = 1080
     private var username: String = ""
     private var password: String = ""
+    private var lanDNS = LANDNSSettings(isEnabled: false)
+    private var lanDNSServer: String?
+    private let resolver = LANDNSResolver()
+    private var loggedRewrites: Set<String> = []
 
     public init() {
         queue.setSpecific(key: queueKey, value: ())
@@ -56,9 +60,22 @@ public final class SOCKS5BridgeServer {
         upstreamHost: String,
         upstreamPort: UInt16,
         username: String,
-        password: String
+        password: String,
+        lanDNS: LANDNSSettings = LANDNSSettings(isEnabled: false)
     ) throws {
         stop()
+
+        self.lanDNS = lanDNS
+        self.lanDNSServer = lanDNS.isEnabled ? lanDNS.effectiveServer() : nil
+        self.loggedRewrites = []
+        if lanDNS.isEnabled {
+            if let server = lanDNSServer {
+                let scope = lanDNS.domainSuffixes.isEmpty ? "all hostnames" : lanDNS.domainSuffixes.joined(separator: ", ")
+                LogStore.log(level: .info, category: "DNS", message: "Resolving \(scope) via LAN DNS \(server) before forwarding")
+            } else {
+                LogStore.log(level: .warning, category: "DNS", message: "LAN DNS resolution enabled but no private IPv4 DNS server found; hostnames go to the remote proxy unresolved")
+            }
+        }
 
         self.listeningPort = port
         self.upstreamHost = upstreamHost
@@ -240,7 +257,9 @@ public final class SOCKS5BridgeServer {
                         }
                         let clientRequestData = fullReqBuf.subdata(in: 0..<fullLen)
                         let initialPayload = fullReqBuf.subdata(in: fullLen..<fullReqBuf.count)
-                        self.connectUpstreamAndPipe(clientConn: clientConn, clientRequestData: clientRequestData, initialPayload: initialPayload)
+                        self.rewriteDomainRequestIfNeeded(clientRequestData) { request in
+                            self.connectUpstreamAndPipe(clientConn: clientConn, clientRequestData: request, initialPayload: initialPayload)
+                        }
                     }
                 }
                 return
@@ -259,6 +278,53 @@ public final class SOCKS5BridgeServer {
                 self.connectUpstreamAndPipe(clientConn: clientConn, clientRequestData: clientRequestData, initialPayload: initialPayload)
             }
         }
+    }
+
+    // MARK: - LAN DNS rewrite
+
+    /// For an ATYP=0x03 request, resolves the domain via the LAN DNS server and rewrites it to an
+    /// ATYP=0x01 request so the remote proxy dials the LAN address. Falls back to the original
+    /// request when disabled, unmatched, or unresolvable. TLS SNI/Host are untouched (they live in
+    /// the client's payload), so the right vhost and certificate are still selected.
+    private func rewriteDomainRequestIfNeeded(_ request: Data, completion: @escaping (Data) -> Void) {
+        guard lanDNS.isEnabled, let server = lanDNSServer,
+              let (host, port) = Self.parseDomainRequest(request),
+              lanDNS.matches(host: host) else {
+            completion(request)
+            return
+        }
+        resolver.resolveA(host: host, server: server) { [weak self] addrs in
+            guard let self = self else { return }
+            self.queue.async {
+                guard let addr = addrs.first else {
+                    completion(request)
+                    return
+                }
+                if self.loggedRewrites.insert(host.lowercased()).inserted {
+                    LogStore.log(level: .info, category: "DNS", message: "\(host) → \(addr) via LAN DNS \(server)")
+                }
+                completion(Self.ipv4Request(command: request[1], address: addr, port: port))
+            }
+        }
+    }
+
+    static func parseDomainRequest(_ request: Data) -> (host: String, port: UInt16)? {
+        let b = [UInt8](request)
+        guard b.count >= 5, b[0] == 0x05, b[3] == 0x03 else { return nil }
+        let len = Int(b[4])
+        guard len > 0, b.count >= 5 + len + 2,
+              let host = String(bytes: b[5..<5 + len], encoding: .utf8) else { return nil }
+        let port = UInt16(b[5 + len]) << 8 | UInt16(b[6 + len])
+        // Literal IPs sent as domains need no lookup.
+        if IPv4Address(host) != nil || IPv6Address(host) != nil { return nil }
+        return (host, port)
+    }
+
+    static func ipv4Request(command: UInt8, address: IPv4Address, port: UInt16) -> Data {
+        var d = Data([0x05, command, 0x00, 0x01])
+        d.append(address.rawValue)
+        d.append(contentsOf: [UInt8(port >> 8), UInt8(port & 0xFF)])
+        return d
     }
 
     private func connectUpstreamAndPipe(clientConn: NWConnection, clientRequestData: Data, initialPayload: Data) {
@@ -281,7 +347,10 @@ public final class SOCKS5BridgeServer {
                     clientRequestData: clientRequestData,
                     initialPayload: initialPayload
                 )
-            case .failed(let err):
+            case .failed(let err), .waiting(let err):
+                // .waiting (refused / no route) would otherwise retry forever and leave the
+                // browser hanging; fail fast with "connection refused" instead.
+                upstreamConn.stateUpdateHandler = nil
                 LogStore.log(
                     level: .error,
                     category: "Bridge",

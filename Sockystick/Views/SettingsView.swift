@@ -45,6 +45,21 @@ public struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Section("LAN DNS (Split-Horizon Names)") {
+                    Toggle("Resolve hostnames via LAN DNS before proxying", isOn: $proxyViewModel.lanDNSEnabled)
+                    TextField("DNS Server:", text: $proxyViewModel.lanDNSServer, prompt: Text("Auto (\(proxyViewModel.detectedLANDNSServer))"))
+                        .textFieldStyle(.roundedBorder)
+                        .disabled(!proxyViewModel.lanDNSEnabled)
+                        .onSubmit { proxyViewModel.applyLANDNSSettings() }
+                    TextField("Domains:", text: $proxyViewModel.lanDNSDomains, prompt: Text("All hostnames (e.g. example.com, home.arpa)"))
+                        .textFieldStyle(.roundedBorder)
+                        .disabled(!proxyViewModel.lanDNSEnabled)
+                        .onSubmit { proxyViewModel.applyLANDNSSettings() }
+                    Text("Looks up names on your LAN DNS server (e.g. Pi-hole) and sends the LAN address to the proxy, so internal names don't resolve to public WAN addresses on the remote side. Falls back to remote resolution if the lookup fails. Press Return to apply.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("Default Proxy Parameters") {
                     TextField("Default Host:", text: $proxyViewModel.proxyHost)
                         .textFieldStyle(.roundedBorder)

@@ -1,0 +1,8 @@
+<h2>Sockystick 1.0.7</h2>
+<p>Sockystick 1.0.7 resolves hostnames on your LAN DNS server before proxying, so split-horizon names (for example a Pi-hole local record) reach your LAN services instead of their public WAN addresses.</p>
+<ul>
+  <li><strong>LAN DNS Resolution</strong>: The local bridge looks up each hostname on your LAN DNS server (auto-detected from the system's private IPv4 resolver, e.g. Pi-hole) and forwards the LAN address to the remote SOCKS5 proxy. TLS SNI and Host headers are unchanged, so the right virtual host and certificate are still selected. Lookups that fail, time out, or are blocked fall back to remote resolution. Configurable in <strong>Settings &rarr; General &rarr; LAN DNS</strong>, with an optional server override and domain list.</li>
+  <li><strong>Fail-Fast Upstream Errors</strong>: When the remote SOCKS5 server is unreachable or refuses the connection, the bridge now returns an immediate &ldquo;connection refused&rdquo; reply instead of leaving browser connections hanging.</li>
+  <li><strong>Bridge Without Authentication</strong>: The local bridge now also runs for unauthenticated proxies when LAN DNS resolution is enabled.</li>
+  <li><strong>Test Isolation</strong>: Running the test suite no longer clears the app's saved proxy settings.</li>
+</ul>

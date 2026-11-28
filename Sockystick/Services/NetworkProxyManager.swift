@@ -273,15 +273,19 @@ public class NetworkProxyManager: NetworkProxyManagerProtocol {
         var targetHost = host
         var targetPort = port
 
-        if useAuthentication {
+        // The local bridge is needed for authentication (Safari can't do RFC 1929) and for
+        // LAN DNS resolution (so split-horizon names reach LAN vhosts, not WAN addresses).
+        let lanDNS = LANDNSSettings.load()
+        if useAuthentication || lanDNS.isEnabled {
             let bridgePort: UInt16 = 10800
             do {
                 try SOCKS5BridgeServer.shared.start(
                     port: bridgePort,
                     upstreamHost: host,
                     upstreamPort: UInt16(port),
-                    username: username,
-                    password: password
+                    username: useAuthentication ? username : "",
+                    password: useAuthentication ? password : "",
+                    lanDNS: lanDNS
                 )
                 targetHost = "127.0.0.1"
                 targetPort = Int(bridgePort)
@@ -298,10 +302,13 @@ public class NetworkProxyManager: NetworkProxyManagerProtocol {
                     details: error.localizedDescription
                 )
             }
-
-            _ = KeychainHelper.shared.saveSOCKSCredentials(host: host, port: port, username: username, password: password)
         } else {
             SOCKS5BridgeServer.shared.stop()
+        }
+
+        if useAuthentication {
+            _ = KeychainHelper.shared.saveSOCKSCredentials(host: host, port: port, username: username, password: password)
+        } else {
             _ = KeychainHelper.shared.deleteSOCKSCredentials(host: host, port: port)
         }
 
